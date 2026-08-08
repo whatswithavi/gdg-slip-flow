@@ -1,8 +1,9 @@
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
-import { extractSlipRouter } from "./routes/extractSlip";
-import { slipsRouter } from "./routes/slips";
+import { extractRecordRouter } from "./routes/extractRecord";
+import { recordsRouter } from "./routes/records";
+import { registerTypesRouter } from "./routes/registerTypes";
 import { queryRouter } from "./routes/query";
 
 dotenv.config();
@@ -17,8 +18,9 @@ app.get("/api/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-app.use(extractSlipRouter);
-app.use(slipsRouter);
+app.use(extractRecordRouter);
+app.use(recordsRouter);
+app.use(registerTypesRouter);
 app.use(queryRouter);
 
 if (require.main === module) {

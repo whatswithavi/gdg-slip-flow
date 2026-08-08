@@ -26,7 +26,7 @@ export async function runQuery(question: string): Promise<QueryAnswer> {
     throw new QueryAgentError("GEMINI_API_KEY is not set");
   }
 
-  const snap = await db.collection("slips").orderBy("createdAt", "desc").limit(200).get();
+  const snap = await db.collection("records").orderBy("createdAt", "desc").limit(200).get();
   const records = snap.docs.map((d) => d.data());
 
   const prompt = buildQueryPrompt(question, records);
@@ -63,7 +63,7 @@ export async function runQuery(question: string): Promise<QueryAnswer> {
     type: "query",
     question,
     answer: result.answer,
-    citedSlipIds: result.citedSlipIds,
+    citedRecordIds: result.citedRecordIds,
     timestamp: Date.now(),
   });
 
