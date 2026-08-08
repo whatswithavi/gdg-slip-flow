@@ -52,6 +52,9 @@ server/.env
 test-results/
 playwright-report/
 
+# Root-level Node (Playwright)
+/node_modules/
+
 # Firebase service account (server-side credential, never commit)
 server/firebase-service-account.json
 

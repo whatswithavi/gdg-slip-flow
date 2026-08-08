@@ -1,0 +1,12 @@
+{
+  "name": "gdg-slip-flow-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Root-level Playwright suite for Slip Flow: exercises the deployed Flutter Web app and the live backend API together.",
+  "scripts": {
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.0"
+  }
+}
