@@ -1,17 +1,40 @@
-# gdg_slip_flow
+# Slip Flow
 
-A new Flutter project.
+Digitizes handwritten raw-material intake slips: photograph a slip, an AI agent extracts structured data, a human approves it, and a second AI agent answers natural-language questions about the approved records — with citations, never hallucinated.
 
-## Getting Started
+Built for **Deploy or Die: HowToAlgo × GDG on Campus KIIT Hackathon** — Track A (Business Process Automation).
 
-This project is a starting point for a Flutter application.
+## Docs
 
-A few resources to get you started if this is your first Flutter project:
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — stack, data flow, component design.
+- [`AGENTS.md`](AGENTS.md) — rules for AI coding agents working in this repo.
+- [`AGENTS_AND_SKILLS.md`](AGENTS_AND_SKILLS.md) — the custom agents (`SlipExtractionAgent`, `QueryAgent`) and skills, once built.
+- [`DECISIONS.md`](DECISIONS.md) — running log of every build decision and why, including the pivot from this hackathon's earlier Track B submission.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Running locally
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Backend
+
+```bash
+cd server
+npm install
+cp .env.example .env   # fill in GEMINI_API_KEY and Firebase details
+npm run build
+npm start
+```
+
+### Frontend
+
+```bash
+flutter pub get
+flutter build web --debug   # see DECISIONS.md for why --debug
+```
+
+Serve `build/web` with any static file server for local testing.
+
+## Testing
+
+```bash
+flutter test
+cd server && npm run test:e2e
+```

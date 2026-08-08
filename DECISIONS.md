@@ -1,0 +1,32 @@
+# Decisions Log — Slip Flow (Deploy or Die, Track A)
+
+Running record of every meaningful decision, in order. Continues the same discipline used on the Track B build (`whatswithavi/gdg_deploy_or_die`), which stays untouched as a fallback submission.
+
+## Why this project exists
+
+Started as a Track B submission (AI Code Review Assistant — done, CI green, tagged `v1.0.0`, kept as-is). Mid-build, a fully pre-written Track A plan (OCR raw-material slip digitization, human-in-the-loop approval, `SlipExtractionAgent`/`QueryAgent`, audit trail) plus a dedicated Firebase project (`gdgdeployordie`) and an existing Flutter design system (`aavii_website`) became available. Track A's design is genuinely stronger on the 30%-weighted Agent Engineering and 25%-weighted Architecture judging criteria (two real agents, human approval gate, audit log, citation-only answers), so we're attempting the pivot with Track B kept as an explicit, working fallback if this doesn't finish in time. Full tradeoff reasoning is in the approved plan; the short version:
+
+- **Flutter Web, not native-only**: the source `ARCHITECTURE.md` specified React/PWA. Flutter Web keeps the same Dart codebase (so it's still "the Flutter app"), while staying Playwright-testable and buildable to Android later via the already-registered app.
+- **Gemini multimodal for OCR, not Google Cloud Vision**: one call does OCR + structured extraction, reusing the exact Gemini key/model already proven working in Track B — avoids a second untested credential path.
+- **A brand-new repo, not `aavii_website` itself**: that repo is a large, unrelated, months-old personal project (a study app) with its own git history and likely-private materials — using it as the hackathon repo would hurt the "clean Git history" story and could force private content public. Only specific reusable files were ported (see below), as fresh files, not a dependency on the old repo.
+
+## Build log
+
+- **Part 1**: `flutter create` (web + android targets) in a fresh repo, `whatswithavi/gdg-slip-flow`. Confirmed web build works before committing. Ported the `vault-ui-soften` Claude Code skill from `aavii_website/.claude/skills/` for consistent UI styling on new screens.
+- **Part 2**: Ported the design system — `app_colors.dart`, `app_theme_controller.dart` (dark mode, theme-aware color extension) verbatim; `BrutalistCard`/`BrutalistButton`/`Pressable` verbatim (already in the target soft/rounded style). `BrutalistTextField` was ported but **softened on arrival** — the source file in `aavii_website` was still in the old hard-border/hard-shadow "brutalist" style, so the `vault-ui-soften` rules were applied directly during the port. `AppHeader`/`NavTabBar` were adapted, not copied verbatim: dropped the onboarding-tour hooks (`TourTargets`) and study-app branding/asset dependencies that don't apply here, rebranded, and retargeted the nav to this app's 3 screens (Upload/Approve/Query).
+- **Part 3**: Node/Express backend skeleton at `server/`, same shape as Track B's proven `routes/` → `agents/` → `skills/` split, with `dotenv` wired in from the start this time (Track B's first build forgot this and it cost real debugging time).
+- **Part 4**: Firebase wiring for both sides.
+  - Android package renamed `com.aavii.gdg_slip_flow` → `com.aavii.gdg` to match the Android app already registered in the `gdgdeployordie` Firebase project (confirmed via the `google-services.json` you provided); `MainActivity.kt` moved to match the new package path.
+  - `lib/firebase_options.dart` hand-written in the same shape the FlutterFire CLI generates — the CLI's logged-in account (`zenthros.codes@gmail.com`) doesn't have access to `gdgdeployordie` (it was created under a different Google account), so `flutterfire configure` wasn't usable. Built from the Web app config (Firebase Console → Project Settings → Web app) plus `google-services.json`.
+  - `server/firebase.ts`: `firebase-admin` initialized with a service account key (`server/firebase-service-account.json`, gitignored, never committed) for server-side Firestore/Storage access. Verified with a real write-then-read-then-delete smoke test against Firestore before wiring it into any route.
+  - **Real bug found and worked around**: Firebase's JS interop throws an uncaught `dartException` at runtime specifically under `dart2js` **release** compilation on this Flutter/Dart version (Flutter 3.44.8 / Dart 3.12.2) — confirmed by isolating dependencies one at a time (crash persisted with only `firebase_core` present, no `cloud_firestore`/`firebase_storage`), pinning `firebase_core` to an older stable release (3.15.2 — changed the exception but didn't fix it), and lowering `dart2js` optimization (`--dart2js-optimization=O1` — still crashed). **`flutter run` in debug mode (DDC compiler) and `flutter build web --debug` both work with no crash** — confirmed Firestore and Storage both initialize successfully. Decision: use `flutter build web --debug` as the CI/demo build target. Trade-off accepted: larger, unminified bundle — acceptable for a hackathon submission where "working software" matters more than bundle size, and reversible later if a `dart2js`-compatible plugin version surfaces.
+- **Data source note**: `Airtable` was one of the two DB options left open in the original planning doc ("[Airtable/Supabase — pick one]"). Firestore was picked first since the Firebase project was already provisioned and proven working. An Airtable API key was subsequently offered as an additional/alternate data source — how it slots in (replacing Firestore vs. supplementing it, e.g. for an existing reference dataset the QueryAgent should read) will be resolved and documented here once the key and its intended use are provided.
+
+## Time budget
+
+Same checkpoint discipline as the approved plan: if the core flow (upload → extract → approve → query-with-citation) isn't working end-to-end with green CI by roughly the 2/3 mark of remaining time, stop adding scope and fall back to polishing/submitting Track B instead.
+
+## Open risks
+
+- The `dart2js` release-mode Firebase crash (see Part 4) — mitigated by using `--debug` builds, but worth re-testing if Flutter/Firebase plugin versions change.
+- Firebase CLI on this machine can't directly manage the `gdgdeployordie` project (different Google account) — any future FlutterFire CLI regeneration needs to happen from the account that owns the project, or config needs to keep being hand-maintained.
