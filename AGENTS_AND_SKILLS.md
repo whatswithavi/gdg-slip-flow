@@ -73,6 +73,39 @@ runQuery(question)                            // agent
   → QueryAnswer                                // agent: returns typed result
 ```
 
+## Agent 3: `DailyDigestAgent`
+
+**File**: [`server/agents/dailyDigestAgent.ts`](server/agents/dailyDigestAgent.ts)
+
+**Purpose**: The owner-facing pillar — proactively summarizes recent activity into a short written report, rather than reacting to a specific upload or question the way the other two agents do.
+
+**Responsibilities**:
+1. Gather recent activity: approved-record counts by register type (last 7 days — wide enough for a small demo dataset to have something to report), low-confidence pending items needing review, and audit-log activity tallies (extractions/approvals/rejections/queries).
+2. Invoke the `summarize_activity` skill to build a prompt that includes that gathered data as the *only* permitted context.
+3. Call Gemini (text-only) to turn the raw counts into a short, specific, plain-language summary + highlights.
+4. Log the digest generation itself to `audit_log`.
+5. Return the summary, highlights, and the raw input data together (so the UI/API consumer can show both the written digest and the numbers it was grounded in).
+
+**Verified** against real Firestore data accumulated over this build's own testing: the returned summary correctly reported the actual counts (matching a direct Firestore query), and correctly reported zero low-confidence items when none existed rather than inventing any.
+
+## Skill 3: `summarize_activity`
+
+**File**: [`server/skills/summarize_activity.ts`](server/skills/summarize_activity.ts)
+
+**Purpose**: The reusable "turn structured activity data into a short owner-facing digest" prompt contract. Distinct from `answer_from_records` (answers one specific question) — this skill's job is unprompted summarization of what happened, grounded strictly in the counts/flags handed to it.
+
+## How they compose
+
+```
+runDailyDigest()                                    // agent
+  → gatherDigestInput()                              // agent: Firestore reads (records, records_pending, audit_log)
+  → buildDigestPrompt(input)                         // skill: builds the prompt
+  → fetch(Gemini API)                                 // agent: calls the LLM
+  → parseDigestResponse(raw)                         // skill: validates + parses the response
+  → write audit_log                                  // agent: logs the digest generation itself
+  → DigestResult + input                             // agent: returns typed result
+```
+
 ## Deterministic service (not an agent or skill): `calculatePayroll`
 
 **File**: [`server/services/payroll.ts`](server/services/payroll.ts)
