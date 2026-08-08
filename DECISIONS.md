@@ -124,6 +124,18 @@ Live at `https://gdg-slip-flow-api.onrender.com`.
 - **Free-tier caveat, disclosed**: Render's free web services spin down after a period of inactivity; the first request after idle can take 30-60s (cold start) before responding. Worth knowing before a live demo — the *second* request onward is fast.
 - Flutter Web build and the APK both need rebuilding with `--dart-define=API_BASE_URL=https://gdg-slip-flow-api.onrender.com` to actually use this — see the next entry.
 
+## 2026-08-08 — Website and APK rebuilt against the live backend, both confirmed working
+
+- Rebuilt the Flutter Web app with `--base-href=/gdg-slip-flow/` (required — GitHub Pages serves a project site from a subpath, not domain root, and Flutter's default `/` base href would have broken every asset URL) plus `--dart-define=API_BASE_URL=https://gdg-slip-flow-api.onrender.com`. Verified the URL was actually compiled in (`grep -c "onrender.com" main.dart.js` → 10 occurrences, zero for `localhost:3000`) before publishing anywhere, not just assumed from the build flag.
+- Published to GitHub Pages via an orphan `gh-pages` branch (kept separate from `main`'s source tree — the built JS bundle doesn't belong in the same history as the source that produces it) plus a `.nojekyll` file (GitHub Pages runs everything through Jekyll by default otherwise, which can mishandle Flutter's build output). Enabled via the GitHub API directly (`gh api repos/.../pages`), not the web UI.
+- **Live and verified end-to-end**, not just "deployed": loaded `https://whatswithavi.github.io/gdg-slip-flow/` in a real browser, confirmed no console errors, and ran a direct `fetch()` from that page's own JS context against the Render backend — got back all 5 register types. This is the actual user-facing path working, not just the backend or just the frontend build succeeding in isolation.
+- APK rebuilt with the same `--dart-define` and sent to the user — same backend, so both the installable app and the website now work independently of this laptop.
+
+**Public URLs for judges**:
+- Website: `https://whatswithavi.github.io/gdg-slip-flow/`
+- Backend API: `https://gdg-slip-flow-api.onrender.com` (not meant to be browsed directly — `/` has no route by design, only `/api/*`)
+- Repo: `https://github.com/whatswithavi/gdg-slip-flow`
+
 ## Open risks
 
 - The `dart2js` release-mode Firebase crash (see Part 4) — mitigated by using `--debug` builds, but worth re-testing if Flutter/Firebase plugin versions change.

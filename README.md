@@ -4,6 +4,11 @@ A configurable platform for digitizing a business's paper registers — raw mate
 
 Built for **Deploy or Die: HowToAlgo × GDG on Campus KIIT Hackathon** — Track A (Business Process Automation).
 
+## Live
+
+- **Website**: [whatswithavi.github.io/gdg-slip-flow](https://whatswithavi.github.io/gdg-slip-flow/)
+- **Backend API**: [gdg-slip-flow-api.onrender.com](https://gdg-slip-flow-api.onrender.com) (free tier — may take 30-60s to wake up on first request after idle)
+
 ## What it does
 
 - **Configurable paperwork digitization** — 5 register types built in (intake/production/dispatch/attendance/expense); a new paper form is a config entry, not new code.
