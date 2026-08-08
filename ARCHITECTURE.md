@@ -118,25 +118,38 @@ Businesses that run on paper — raw-material intake slips, production logs, dis
 
 - Reusable capability used by `DailyDigestAgent`: the "turn structured activity data into a short digest" prompt contract, grounded strictly in the counts/flags handed to it.
 
-### 4.10 Deterministic service (not an agent or skill) — `calculatePayroll`
+### 4.10 Custom Agent 4 — `FaceAttendanceAgent`
+
+- **Photo-based attendance check-in**, an alternative to filling a paper attendance register: a worker's photo is compared against every enrolled worker's reference photo **in one multi-image LLM call** (`callLLMMultiVision` — see 4.3), and a match above a confidence threshold writes an attendance record.
+- **Not an approval bypass**: a match writes to `records_pending` with `registerType: "attendance"`, going through the identical human-approval screen as every other register type — the existing dynamic Approval-card renders it with no special-casing.
+- **Reliability**: uses a general-purpose vision LLM for photo comparison, not a dedicated face-recognition embeddings model — meaningfully less rigorous, acceptable for a small enrolled team, not a production biometric-accuracy claim.
+- **Privacy**: worker photos are biometric data, requiring real consent/data-handling consideration — flagged to the user before building, not treated as a routine feature add.
+- Every match attempt (successful or not) is logged to `audit_log`.
+
+### 4.11 Custom Skill — `match_worker_face`
+
+- Reusable capability used by `FaceAttendanceAgent`: owns the multi-image prompt structure (N labeled reference photos, then the new photo) and the output schema (`matchedWorkerId`, `matchedWorkerName`, `confidence`, `reasoning`) — the `reasoning` field lets a human check a surprising or low-confidence match.
+
+### 4.12 Deterministic service (not an agent or skill) — `calculatePayroll`
 
 - `server/services/payroll.ts`: sums approved `attendance` records per worker and multiplies by a given wage rate. Deliberately plain code, not an LLM call — arithmetic should be exact, not probabilistic. Kept out of `server/skills/` to keep the AI/non-AI distinction real in the code structure, not just asserted in docs.
 
-### 4.11 Compliance document library
+### 4.13 Compliance document library
 
 - `POST/GET /api/compliance-docs`: text-based (title + content + optional expiry date) — not PDF upload/parsing, which would be a real scope expansion not worth the remaining build time. Documents become citable context for `QueryAgent` immediately on upload.
 
-### 4.12 Database
+### 4.14 Database
 
 - **Tech:** Firebase Firestore (project: `gdgdeployordie`, already provisioned for this hackathon under a dedicated Android package — separate from any other project). Free Spark plan — no billing required.
 - **Collections:**
   - `records_pending` — raw extracted data awaiting human approval, tagged with `registerType` and `companyId`
   - `records` — approved, final records (generic `fields` object per record, shaped by that record's register type)
   - `compliance_docs` — uploaded compliance documents (title, content, optional expiry date)
-  - `audit_log` — every AI decision and human action (extraction, approval, rejection, query, digest), with a timestamp, the input reference, and reasoning/confidence
+  - `workers` — enrolled workers for face-recognition attendance (name + reference photo, stored as base64 since Storage isn't enabled)
+  - `audit_log` — every AI decision and human action (extraction, approval, rejection, query, digest, face-match attempt), with a timestamp, the input reference, and reasoning/confidence
 - **Multi-tenancy:** every record carries a `companyId` (currently a single hardcoded constant — see `DECISIONS.md`). The data model is genuinely multi-tenant-ready; auth and a company picker were explicitly scoped out as too large for the remaining build time.
 
-### 4.13 Storage
+### 4.15 Storage
 
 - **Deliberately not used.** Cloud Storage for Firebase now requires the Blaze (pay-as-you-go) billing plan to provision at all — not just for meaningful usage — which was rejected for this hackathon submission (no card, no billing risk). The upload step is non-blocking by design (`uploadRegisterImage` catches and logs, returns `null`), so extraction/approval/query are fully functional without it; records simply have `imageUrl: null` and the Approval screen shows a placeholder icon instead of the original photo. See `DECISIONS.md` — this is a permanent scope decision, not an outstanding gap.
 

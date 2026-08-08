@@ -8,6 +8,8 @@ import { queryRouter } from "./routes/query";
 import { payrollRouter } from "./routes/payroll";
 import { digestRouter } from "./routes/digest";
 import { complianceDocsRouter } from "./routes/complianceDocs";
+import { workersRouter } from "./routes/workers";
+import { faceAttendanceRouter } from "./routes/faceAttendance";
 
 dotenv.config();
 
@@ -28,6 +30,8 @@ app.use(queryRouter);
 app.use(payrollRouter);
 app.use(digestRouter);
 app.use(complianceDocsRouter);
+app.use(workersRouter);
+app.use(faceAttendanceRouter);
 
 if (require.main === module) {
   app.listen(PORT, () => {
@@ -36,3 +40,4 @@ if (require.main === module) {
 }
 
 export { app };
+export default app;

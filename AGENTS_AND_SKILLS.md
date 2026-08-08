@@ -2,7 +2,7 @@
 
 ## Shared: LLM provider abstraction (`server/llm.ts`)
 
-All three agents below call `callLLMText`/`callLLMVision` rather than hitting an LLM API directly. Both try Gemini first (the primary, proven provider) and fall back to Groq (`qwen/qwen3.6-27b` for vision, `openai/gpt-oss-20b` for text) **specifically on a 429 quota error** — a malformed request or bad prompt still fails loudly rather than silently retrying against a different provider and masking the bug. This removed duplicated fetch boilerplate that used to live separately in each agent, and implements the multi-provider resilience the hackathon brief itself recommends. Verified for real: Gemini's free-tier quota was genuinely exhausted during development, so every agent below has been live-tested running entirely on the Groq fallback path, not just the primary one.
+All four agents below call `callLLMText`/`callLLMVision`/`callLLMMultiVision` rather than hitting an LLM API directly. All try Gemini first (the primary, proven provider) and fall back to Groq (`qwen/qwen3.6-27b` for vision, `openai/gpt-oss-20b` for text) **specifically on a 429 quota error** — a malformed request or bad prompt still fails loudly rather than silently retrying against a different provider and masking the bug. This removed duplicated fetch boilerplate that used to live separately in each agent, and implements the multi-provider resilience the hackathon brief itself recommends. Verified for real: Gemini's free-tier quota was genuinely exhausted during development, so every agent below has been live-tested running entirely on the Groq fallback path, not just the primary one.
 
 ## Agent 1: `RegisterExtractionAgent`
 
@@ -108,6 +108,44 @@ runDailyDigest()                                    // agent
   → parseDigestResponse(raw)                         // skill: validates + parses the response
   → write audit_log                                  // agent: logs the digest generation itself
   → DigestResult + input                             // agent: returns typed result
+```
+
+## Agent 4: `FaceAttendanceAgent`
+
+**File**: [`server/agents/faceAttendanceAgent.ts`](server/agents/faceAttendanceAgent.ts)
+
+**Purpose**: Photo-based attendance check-in — a worker faces the camera instead of a paper sheet being filled and photographed. Fetches every enrolled worker's reference photo, compares a freshly captured photo against all of them **in a single multi-image LLM call**, and — if matched with reasonable confidence (≥0.5) — writes an attendance record.
+
+**Responsibilities**:
+1. Fetch all enrolled workers (`workers` collection — reference photo stored as base64 directly in Firestore, since Firebase Storage isn't enabled; see `DECISIONS.md`).
+2. Invoke `match_worker_face` to build a prompt describing each reference photo, then call `callLLMMultiVision` with all reference images plus the new photo in one request (not one comparison call per worker — cheaper and keeps the model reasoning about all candidates together).
+3. Log the match attempt (worker id, confidence) to `audit_log` regardless of outcome.
+4. **If matched** (confidence ≥ 0.5): write a `records_pending` entry with `registerType: "attendance"` — going through the exact same human-approval gate as every other register type. A face match is a strong signal, not a bypass of the human-in-the-loop principle the rest of this app is built around.
+5. **If not matched or low confidence**: no record is created — returns the match result (with `recordId: null`) so the caller can show "not recognized."
+
+**Reliability note, stated plainly**: this uses a general-purpose vision LLM to compare photos, not a purpose-built face-recognition model (e.g. embeddings + similarity search). It's noticeably less rigorous than dedicated biometric systems. Acceptable for a small enrolled team in a demo context; not a claim of production-grade accuracy.
+
+**Privacy note**: worker photos are biometric data. This feature was built deliberately (not as a casual add-on) after flagging that tradeoff to the user — see `DECISIONS.md`.
+
+**Verified** with synthetic test images (two visually distinct generated "faces," not real photos — avoids needing real biometric data just to test the code path): correctly matched a photo against its own enrolled reference while correctly distinguishing it from a second enrolled worker (confidence 1.0, correct reasoning citing specific visual differences), and correctly refused to match a third, unenrolled "stranger" image (confidence 0, `recordId: null`) rather than guessing.
+
+## Skill 4: `match_worker_face`
+
+**File**: [`server/skills/match_worker_face.ts`](server/skills/match_worker_face.ts)
+
+**Purpose**: The reusable "compare a new photo against N reference photos and identify the best match, or none" prompt contract. Owns the multi-image prompt structure (reference photos labeled in order, new photo last) and the output schema (`matchedWorkerId`, `matchedWorkerName`, `confidence`, `reasoning`) — the `reasoning` field isn't just decoration, it's what a human reviewing a low-confidence or surprising match can actually check.
+
+## How they compose
+
+```
+runFaceAttendance(imageBase64, mimeType)            // agent
+  → fetch enrolled workers from Firestore             // agent
+  → buildMatchPrompt(workers)                        // skill: builds the prompt
+  → callLLMMultiVision(prompt, [refPhotos..., newPhoto])  // agent: calls the LLM with all images
+  → parseMatchResponse(raw)                          // skill: validates + parses the response
+  → write audit_log (always)                         // agent
+  → write records_pending (only if matched)           // agent: same approval gate as every register type
+  → FaceAttendanceResult                              // agent: returns typed result
 ```
 
 ## Deterministic service (not an agent or skill): `calculatePayroll`
