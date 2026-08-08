@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import { extractSlipRouter } from "./routes/extractSlip";
 import { slipsRouter } from "./routes/slips";
+import { queryRouter } from "./routes/query";
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.get("/api/health", (_req, res) => {
 
 app.use(extractSlipRouter);
 app.use(slipsRouter);
+app.use(queryRouter);
 
 if (require.main === module) {
   app.listen(PORT, () => {

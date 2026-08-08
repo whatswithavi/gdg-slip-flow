@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'theme/app_theme_controller.dart';
-import 'theme/app_text_styles.dart';
 import 'widgets/app_header.dart';
 import 'widgets/nav_tab_bar.dart';
-import 'widgets/brutalist_card.dart';
 import 'screens/upload_screen.dart';
 import 'screens/approval_screen.dart';
+import 'screens/query_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -70,7 +69,7 @@ class _HomeShellState extends State<HomeShell> {
             children: const [
               UploadScreen(),
               ApprovalScreen(),
-              _PlaceholderBody(tabId: 'query'),
+              QueryScreen(),
             ],
           ),
         ),
@@ -78,22 +77,6 @@ class _HomeShellState extends State<HomeShell> {
       bottomNavigationBar: NavTabBar(
         activeTabId: _activeTab,
         onTabSelected: (id) => setState(() => _activeTab = id),
-      ),
-    );
-  }
-}
-
-class _PlaceholderBody extends StatelessWidget {
-  final String tabId;
-  const _PlaceholderBody({required this.tabId});
-
-  @override
-  Widget build(BuildContext context) {
-    return BrutalistCard(
-      backgroundColor: context.cardBg,
-      child: Text(
-        '$tabId screen coming next',
-        style: AppTextStyles.sans(fontSize: 16, color: context.ink),
       ),
     );
   }

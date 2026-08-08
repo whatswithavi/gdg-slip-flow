@@ -20,5 +20,10 @@ void main() {
     // Heading renders immediately regardless of the pending-slips fetch
     // outcome (no backend running in this widget test).
     expect(find.text('Review pending slips'), findsOneWidget);
+
+    await tester.tap(find.text('QUERY'));
+    await tester.pump();
+
+    expect(find.text('Ask about approved slips'), findsOneWidget);
   });
 }

@@ -67,6 +67,15 @@ class ApiClient {
     _decodeOrThrow(res);
   }
 
+  static Future<Map<String, dynamic>> query(String question) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/api/query'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'question': question}),
+    );
+    return _decodeOrThrow(res);
+  }
+
   static Map<String, dynamic> _decodeOrThrow(http.Response res) {
     final body = jsonDecode(res.body);
     if (res.statusCode >= 400) {
