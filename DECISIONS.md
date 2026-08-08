@@ -113,6 +113,17 @@ New capability, not part of the original 4-pillar scope: photo-based attendance 
 - **Real receipt email confirmed sent**: a live approval wrote `receipt_emailed` to `audit_log` for that record — the first attempt after the fix hit a transient `fetch failed` network error (unrelated to SendGrid/sender config, didn't recur on retry), the second attempt succeeded cleanly. This is genuine evidence of a successful send, not just "no error thrown" — checked `audit_log` directly rather than trusting an absence of console output.
 - Test records created during this verification pass cleaned up the same way as the Part H sweep.
 
+## 2026-08-08 — Backend deployed publicly (Render, after Vercel abandoned)
+
+Needed a real public URL: judges installing the APK or opening the web build shouldn't depend on this laptop being on and reachable. Attempted Vercel first (three separate problems worked through in sequence — a Root Directory left at the repo root instead of `server/`, framework auto-detection ("Other" preset) not actually building anything despite a "successful" 2-second deploy, fixed with an explicit `server/vercel.json` — and then a `FUNCTION_INVOCATION_FAILED` on every route including `/api/health`, which persisted after re-verifying every env var was present and correctly formatted). Working blind without log access (the connected Vercel integration couldn't see this project — different account scope than the one used to create it via the dashboard) made the last failure undiagnosable, and it fit a known pattern: `firebase-admin`'s Firestore client is gRPC-based and has real, documented friction in serverless/ephemeral-function environments like Vercel's.
+
+**Decision: switched to Render** — a persistent Node process, not serverless functions, which is what a gRPC-based client actually wants. Deployed via Render's REST API directly (no dashboard UI dependency this time): created the web service, one `PATCH` to correct `rootDir` (initially nested under the wrong field in the create payload), triggered a deploy, polled to `status: "live"`. **Worked on the first real attempt** — `/api/health` and `/api/register-types` both returned correct data immediately, confirming the Firestore-in-serverless theory was very likely the actual Vercel root cause, not the env var formatting we spent time re-verifying.
+
+Live at `https://gdg-slip-flow-api.onrender.com`.
+
+- **Free-tier caveat, disclosed**: Render's free web services spin down after a period of inactivity; the first request after idle can take 30-60s (cold start) before responding. Worth knowing before a live demo — the *second* request onward is fast.
+- Flutter Web build and the APK both need rebuilding with `--dart-define=API_BASE_URL=https://gdg-slip-flow-api.onrender.com` to actually use this — see the next entry.
+
 ## Open risks
 
 - The `dart2js` release-mode Firebase crash (see Part 4) — mitigated by using `--debug` builds, but worth re-testing if Flutter/Firebase plugin versions change.
