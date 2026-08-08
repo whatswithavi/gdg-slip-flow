@@ -106,6 +106,13 @@ New capability, not part of the original 4-pillar scope: photo-based attendance 
 - **Cleared all accumulated test data from the live Firestore project** (18 approved records, 2 pending, 1 compliance doc, 2 enrolled test workers, 76 audit_log entries) — all of it was synthetic data generated during this build's own testing (the two enrolled "workers," for instance, were the cartoon test images from Part 17/18), not anything real. Done via a one-off script, not a permanent feature — there's still no delete endpoint in the app itself (unchanged design decision, see earlier parts). Gives a clean slate for the real demo instead of a cluttered dataset with a dozen near-duplicate test intake slips.
 - `README.md` rewritten — it had described only the original single-agent, intake-only scope since Part 5 and hadn't been touched since, badly understating what's actually built by this point (4 agents, 4 skills, 2 deterministic services, 5 register types, face check-in, email receipts).
 
+## 2026-08-08 — SendGrid sender verification resolved
+
+- User completed SendGrid's Single Sender Verification, but for `whatswithavi@gmail.com`, not `zenthros.codes@gmail.com` (the address originally configured as `RECEIPT_SENDER_EMAIL`) — a re-test still failed with the same 403 error afterward, which looked like the fix hadn't worked. Rather than guess, queried SendGrid's `/v3/verified_senders` API directly with the real key, which showed exactly one verified sender: `whatswithavi@gmail.com`. Confirmed by a screenshot of the SendGrid dashboard's Single Sender Verification page. Root cause was a mismatched address, not a broken verification.
+- Fixed by updating `RECEIPT_SENDER_EMAIL` (local `.env` only — this is a per-environment secret, never committed) to the actually-verified address; `RECEIPT_RECIPIENT_EMAIL` stays `zenthros.codes@gmail.com`, since SendGrid only requires the *sender* to be verified, not the recipient.
+- **Real receipt email confirmed sent**: a live approval wrote `receipt_emailed` to `audit_log` for that record — the first attempt after the fix hit a transient `fetch failed` network error (unrelated to SendGrid/sender config, didn't recur on retry), the second attempt succeeded cleanly. This is genuine evidence of a successful send, not just "no error thrown" — checked `audit_log` directly rather than trusting an absence of console output.
+- Test records created during this verification pass cleaned up the same way as the Part H sweep.
+
 ## Open risks
 
 - The `dart2js` release-mode Firebase crash (see Part 4) — mitigated by using `--debug` builds, but worth re-testing if Flutter/Firebase plugin versions change.
