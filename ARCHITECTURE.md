@@ -153,6 +153,10 @@ Businesses that run on paper — raw-material intake slips, production logs, dis
 
 - **Deliberately not used.** Cloud Storage for Firebase now requires the Blaze (pay-as-you-go) billing plan to provision at all — not just for meaningful usage — which was rejected for this hackathon submission (no card, no billing risk). The upload step is non-blocking by design (`uploadRegisterImage` catches and logs, returns `null`), so extraction/approval/query are fully functional without it; records simply have `imageUrl: null` and the Approval screen shows a placeholder icon instead of the original photo. See `DECISIONS.md` — this is a permanent scope decision, not an outstanding gap.
 
+### 4.16 Deterministic service (not an agent or skill) — digital receipt emails
+
+- `server/services/email.ts`: on every approval, formats the approved fields into an HTML receipt and sends it via SendGrid to a fixed recipient. Plain code, not an LLM call — same reasoning as `calculatePayroll`. Non-blocking: a failed send is logged but never fails the approval itself, since the approval is already durably recorded in Firestore first. Requires `SENDGRID_API_KEY`, `RECEIPT_SENDER_EMAIL` (must be verified as a sender identity in SendGrid), and `RECEIPT_RECIPIENT_EMAIL` — if any are unset, or sending fails for any reason, approvals still succeed exactly as if this feature didn't exist.
+
 ## 5. Data Flow Summary
 
 1. Document photographed/uploaded via the Flutter Web app, tagged with a register type
@@ -180,7 +184,6 @@ GitHub Actions: a single job covering backend lint/build, `flutter analyze`/`flu
 
 ## 9. Deferred (documented, not built — scope cut for a solo build)
 
-- Email backup of approved records — not one of the 5 non-negotiables; would add a new credential (Resend/SendGrid) for no scoring benefit under time pressure.
 - Full inventory aggregation dashboard — the Query screen's answer-with-citations already surfaces approved records; a dedicated dashboard is polish, not core.
 - PDF upload/parsing for compliance documents — text-in achieves the same "ask questions with citations" goal without the extraction/OCR complexity.
 - Multi-tenant auth / company picker — the data model supports it (`companyId` on every record); building real tenant isolation was out of scope for the remaining time.

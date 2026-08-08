@@ -155,3 +155,11 @@ runFaceAttendance(imageBase64, mimeType)            // agent
 **Deliberately not LLM-backed.** Attendance records are already structured, human-approved data by the time payroll runs over them (`GET /api/payroll?wageRate=...` sums `hoursWorked` per worker from approved `attendance`-type records and multiplies by the given rate). Summing numbers and multiplying by a rate is exact arithmetic — asking a language model to do it would trade a guaranteed-correct calculation for a probabilistic one, for no benefit. Kept in `server/services/`, not `server/skills/`, to keep that distinction honest in the codebase's structure, not just in this document: the hackathon's "custom agent + custom skill" requirement is about AI orchestration, and this isn't that — it's the kind of business logic an agent's output feeds into, correctly built as plain code.
 
 Verified against seeded attendance data (bypassing extraction to avoid spending Gemini quota on a deterministic-math test): two workers, mixed present/half-day/absent days, confirmed correct per-worker hour totals, days-present counts (absent days with 0 hours correctly excluded), and wage calculations.
+
+## Deterministic service (not an agent or skill): digital receipt emails
+
+**File**: [`server/services/email.ts`](server/services/email.ts)
+
+**Deliberately not LLM-backed**, same reasoning as `calculatePayroll`: formatting an already-structured, human-approved record's fields into an HTML email is not a task a language model improves. On every approval, sends the formatted receipt via SendGrid to a fixed recipient — non-blocking (a failed send is logged, never fails the approval itself, since the approval is already durably written to Firestore first).
+
+**Verified against the real SendGrid API** (not mocked): a real approval correctly triggered a real API call, the non-blocking error handling worked exactly as designed when the send failed, and the actual failure reason (an unverified sender identity — a genuine SendGrid account-setup requirement, not a code bug) was surfaced in the server log rather than silently swallowed.

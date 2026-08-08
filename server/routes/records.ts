@@ -1,5 +1,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "../firebase";
+import { getRegisterType } from "../registerTypes";
+import { sendReceiptEmail } from "../services/email";
 
 export const recordsRouter = Router();
 
@@ -67,6 +69,25 @@ recordsRouter.post("/api/approve-record", async (req: Request, res: Response) =>
       recordId: id,
       timestamp: Date.now(),
     });
+
+    // Non-blocking, same pattern as Storage image uploads: a failed email
+    // must never fail the approval itself. The approval is already durably
+    // recorded above; the email is a convenience layer on top of it.
+    try {
+      const typeConfig = getRegisterType(original.registerType);
+      await sendReceiptEmail(
+        { id, registerType: original.registerType, fields: approved.fields, approvedAt: approved.approvedAt },
+        typeConfig.label,
+        typeConfig.fields
+      );
+      await db.collection("audit_log").add({
+        type: "receipt_emailed",
+        recordId: id,
+        timestamp: Date.now(),
+      });
+    } catch (err) {
+      console.warn(`Receipt email failed for record ${id} (approval still succeeded):`, (err as Error).message);
+    }
 
     return res.status(200).json(approved);
   } catch (err) {
