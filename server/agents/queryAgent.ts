@@ -26,10 +26,14 @@ export async function runQuery(question: string): Promise<QueryAnswer> {
     throw new QueryAgentError("GEMINI_API_KEY is not set");
   }
 
-  const snap = await db.collection("records").orderBy("createdAt", "desc").limit(200).get();
-  const records = snap.docs.map((d) => d.data());
+  const [recordsSnap, docsSnap] = await Promise.all([
+    db.collection("records").orderBy("createdAt", "desc").limit(200).get(),
+    db.collection("compliance_docs").orderBy("createdAt", "desc").limit(50).get(),
+  ]);
+  const records = recordsSnap.docs.map((d) => d.data());
+  const complianceDocs = docsSnap.docs.map((d) => d.data());
 
-  const prompt = buildQueryPrompt(question, records);
+  const prompt = buildQueryPrompt(question, records, complianceDocs);
 
   const res = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
     method: "POST",
@@ -64,6 +68,7 @@ export async function runQuery(question: string): Promise<QueryAnswer> {
     question,
     answer: result.answer,
     citedRecordIds: result.citedRecordIds,
+    citedDocIds: result.citedDocIds,
     timestamp: Date.now(),
   });
 

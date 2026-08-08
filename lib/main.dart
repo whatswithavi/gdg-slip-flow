@@ -9,6 +9,7 @@ import 'widgets/nav_tab_bar.dart';
 import 'screens/upload_screen.dart';
 import 'screens/approval_screen.dart';
 import 'screens/query_screen.dart';
+import 'screens/insights_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,7 +59,7 @@ class _HomeShellState extends State<HomeShell> {
   List<Map<String, dynamic>>? _registerTypes;
   String? _loadError;
 
-  static const _tabOrder = ['upload', 'approve', 'query'];
+  static const _tabOrder = ['upload', 'approve', 'query', 'insights'];
 
   @override
   void initState() {
@@ -95,6 +96,7 @@ class _HomeShellState extends State<HomeShell> {
                     UploadScreen(registerTypes: _registerTypes!),
                     ApprovalScreen(registerTypes: _registerTypes!),
                     const QueryScreen(),
+                    const InsightsScreen(),
                   ],
                 ),
         ),

@@ -59,7 +59,7 @@ runRegisterExtraction(imageBase64, mimeType, registerType)  // agent
 
 **File**: [`server/skills/answer_from_records.ts`](server/skills/answer_from_records.ts)
 
-**Purpose**: The reusable "answer only from provided context, always cite" prompt contract — the mechanism that makes the no-hallucination guarantee enforceable rather than just a hope. Owns the prompt and the expected output schema (`answer`, `citedRecordIds`). Framed generically ("a business's digitized paper records") so it reads correctly whether the cited records are intake slips, attendance, or expenses.
+**Purpose**: The reusable "answer only from provided context, always cite" prompt contract — the mechanism that makes the no-hallucination guarantee enforceable rather than just a hope. Owns the prompt and the expected output schema (`answer`, `citedRecordIds`, `citedDocIds`). Framed generically ("a business's digitized paper records") so it reads correctly whether the cited records are intake slips, attendance, or expenses. Extended (Part E) to accept a second context source — uploaded compliance documents — so the same no-hallucination guarantee covers "are we compliant with X" questions, not just operational record lookups; the model must separately cite which record IDs and which document IDs it actually used.
 
 ## How they compose
 

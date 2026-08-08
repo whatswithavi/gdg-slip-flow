@@ -7,6 +7,7 @@ import { registerTypesRouter } from "./routes/registerTypes";
 import { queryRouter } from "./routes/query";
 import { payrollRouter } from "./routes/payroll";
 import { digestRouter } from "./routes/digest";
+import { complianceDocsRouter } from "./routes/complianceDocs";
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.use(registerTypesRouter);
 app.use(queryRouter);
 app.use(payrollRouter);
 app.use(digestRouter);
+app.use(complianceDocsRouter);
 
 if (require.main === module) {
   app.listen(PORT, () => {

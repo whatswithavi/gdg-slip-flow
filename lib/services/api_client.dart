@@ -17,6 +17,28 @@ class ApiClient {
     return _decodeListOrThrow(res);
   }
 
+  static Future<Map<String, dynamic>> uploadComplianceDoc(String title, String content, {String? expiryDate}) async {
+    final payload = <String, dynamic>{'title': title, 'content': content};
+    if (expiryDate != null && expiryDate.isNotEmpty) payload['expiryDate'] = expiryDate;
+
+    final res = await http.post(
+      Uri.parse('$baseUrl/api/compliance-docs'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+    return _decodeOrThrow(res);
+  }
+
+  static Future<List<Map<String, dynamic>>> fetchComplianceDocs() async {
+    final res = await http.get(Uri.parse('$baseUrl/api/compliance-docs'));
+    return _decodeListOrThrow(res);
+  }
+
+  static Future<Map<String, dynamic>> fetchDigest() async {
+    final res = await http.get(Uri.parse('$baseUrl/api/digest'));
+    return _decodeOrThrow(res);
+  }
+
   static Future<Map<String, dynamic>> extractRecord(List<int> imageBytes, String mimeType, String registerType) async {
     final res = await http.post(
       Uri.parse('$baseUrl/api/extract-record'),

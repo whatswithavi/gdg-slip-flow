@@ -11,18 +11,20 @@ class NavTab {
   const NavTab({required this.id, required this.icon, required this.label});
 }
 
-/// Adapted from aavii_website's NavTabBar for this app's 3 screens (dropped
+/// Adapted from aavii_website's NavTabBar for this app's screens (dropped
 /// the onboarding-tour hooks — no tour system in this project).
 const List<NavTab> kNavTabs = [
   NavTab(id: 'upload', icon: Icons.camera_alt_outlined, label: 'Upload'),
   NavTab(id: 'approve', icon: Icons.fact_check_outlined, label: 'Approve'),
   NavTab(id: 'query', icon: Icons.search, label: 'Query'),
+  NavTab(id: 'insights', icon: Icons.insights_outlined, label: 'Insights'),
 ];
 
 const Map<String, Color> _kTabAccents = {
   'upload': AppColors.vaultPink,
   'approve': Color(0xFF34D399),
   'query': AppColors.vaultPurple,
+  'insights': AppColors.vaultYellowDeep,
 };
 
 class NavTabBar extends StatelessWidget {
@@ -46,7 +48,9 @@ class NavTabBar extends StatelessWidget {
                 child: Builder(builder: (context) {
                   final active = activeTabId == kNavTabs[i].id;
                   final accent = _kTabAccents[kNavTabs[i].id] ?? AppColors.black;
-                  final fg = active ? AppColors.white : context.ink;
+                  // Yellow is too light for white text to read against —
+                  // falls back to ink (near-black) for that one accent.
+                  final fg = active && accent != AppColors.vaultYellowDeep ? AppColors.white : context.ink;
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOutCubic,

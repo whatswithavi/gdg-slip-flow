@@ -19,6 +19,7 @@ class _QueryScreenState extends State<QueryScreen> {
   bool _loading = false;
   String? _answer;
   List<String> _citedRecordIds = [];
+  List<String> _citedDocIds = [];
   String? _error;
 
   @override
@@ -36,6 +37,7 @@ class _QueryScreenState extends State<QueryScreen> {
       _error = null;
       _answer = null;
       _citedRecordIds = [];
+      _citedDocIds = [];
     });
 
     try {
@@ -43,6 +45,7 @@ class _QueryScreenState extends State<QueryScreen> {
       setState(() {
         _answer = res['answer'] as String?;
         _citedRecordIds = (res['citedRecordIds'] as List?)?.cast<String>() ?? [];
+        _citedDocIds = (res['citedDocIds'] as List?)?.cast<String>() ?? [];
       });
     } catch (e) {
       setState(() => _error = 'Query failed: $e');
@@ -60,7 +63,7 @@ class _QueryScreenState extends State<QueryScreen> {
           Text('Ask about approved records', style: AppTextStyles.sans(fontSize: 20, fontWeight: FontWeight.w900, color: context.ink)),
           const SizedBox(height: 4),
           Text(
-            'Answers come only from approved records, with citations — never guessed.',
+            'Answers come only from approved records and uploaded compliance docs, with citations — never guessed.',
             style: AppTextStyles.sans(fontSize: 13, color: context.inkMuted),
           ),
           const SizedBox(height: 16),
@@ -92,12 +95,17 @@ class _QueryScreenState extends State<QueryScreen> {
                   const SizedBox(height: 10),
                   if (_citedRecordIds.isNotEmpty)
                     Text(
-                      'Sources: ${_citedRecordIds.map((id) => id.substring(0, 8)).join(', ')}',
+                      'Record sources: ${_citedRecordIds.map((id) => id.substring(0, 8)).join(', ')}',
                       style: AppTextStyles.mono(fontSize: 11, color: context.inkMuted),
-                    )
-                  else
+                    ),
+                  if (_citedDocIds.isNotEmpty)
                     Text(
-                      'No matching records — nothing to cite.',
+                      'Document sources: ${_citedDocIds.map((id) => id.substring(0, 8)).join(', ')}',
+                      style: AppTextStyles.mono(fontSize: 11, color: context.inkMuted),
+                    ),
+                  if (_citedRecordIds.isEmpty && _citedDocIds.isEmpty)
+                    Text(
+                      'No matching sources — nothing to cite.',
                       style: AppTextStyles.mono(fontSize: 11, color: context.inkMuted),
                     ),
                 ],
