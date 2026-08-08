@@ -16,6 +16,7 @@ class NavTab {
 const List<NavTab> kNavTabs = [
   NavTab(id: 'upload', icon: Icons.camera_alt_outlined, label: 'Upload'),
   NavTab(id: 'approve', icon: Icons.fact_check_outlined, label: 'Approve'),
+  NavTab(id: 'faces', icon: Icons.face_retouching_natural, label: 'Check-in'),
   NavTab(id: 'query', icon: Icons.search, label: 'Query'),
   NavTab(id: 'insights', icon: Icons.insights_outlined, label: 'Insights'),
 ];
@@ -23,6 +24,7 @@ const List<NavTab> kNavTabs = [
 const Map<String, Color> _kTabAccents = {
   'upload': AppColors.vaultPink,
   'approve': Color(0xFF34D399),
+  'faces': Color(0xFFFB7185),
   'query': AppColors.vaultPurple,
   'insights': AppColors.vaultYellowDeep,
 };

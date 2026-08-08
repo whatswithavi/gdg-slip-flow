@@ -89,6 +89,9 @@ New capability, not part of the original 4-pillar scope: photo-based attendance 
 
 **Verified** with two synthetic test images (generated cartoon "faces" with clearly different colors/features, not real photos — avoids needing actual biometric data just to exercise the code): correctly matched a photo against its own enrollment while distinguishing it from a second enrolled worker (confidence 1.0, and the `reasoning` field cited the actual distinguishing features), and correctly returned no match (confidence 0, no record created) for a third, unenrolled test image rather than guessing. This is real evidence the multi-image comparison and confidence-gating logic work correctly — it is not evidence of real-world face-recognition accuracy on actual human photos, which hasn't been tested and shouldn't be assumed.
 
+**Part 18** (Flutter side): new `FaceAttendanceScreen`, a 5th nav tab ("Check-in"). Two sections: enroll a worker (name + reference photo captured via `image_picker`, compressed client-side — `maxWidth: 512, imageQuality: 70` — since photos are stored directly as base64 in Firestore documents, not Storage, so keeping them small matters more than it would with real object storage) and check-in (capture a photo, submit, see the match result with confidence and whether an attendance record was created). Reused `ApiClient`'s existing error-surfacing pattern rather than inventing a new one.
+  - Widget test updated for the 5th tab; verified through the real running app (register-types loads, no console errors, renders past loading state) — same verification approach as every other UI addition this build, given Flutter Web's canvas isn't reliably click-automatable here.
+
 ## Open risks
 
 - The `dart2js` release-mode Firebase crash (see Part 4) — mitigated by using `--debug` builds, but worth re-testing if Flutter/Firebase plugin versions change.

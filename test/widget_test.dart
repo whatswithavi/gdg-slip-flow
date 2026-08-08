@@ -25,6 +25,7 @@ void main() {
     // still render underneath the error.
     expect(find.text('UPLOAD'), findsOneWidget);
     expect(find.text('APPROVE'), findsOneWidget);
+    expect(find.text('CHECK-IN'), findsOneWidget);
     expect(find.text('QUERY'), findsOneWidget);
     expect(find.text('INSIGHTS'), findsOneWidget);
   });

@@ -92,6 +92,36 @@ class ApiClient {
     _decodeOrThrow(res);
   }
 
+  static Future<Map<String, dynamic>> enrollWorker(String name, List<int> photoBytes, String mimeType) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/api/workers'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': name,
+        'photoBase64': base64Encode(photoBytes),
+        'mimeType': mimeType,
+      }),
+    );
+    return _decodeOrThrow(res);
+  }
+
+  static Future<List<Map<String, dynamic>>> fetchWorkers() async {
+    final res = await http.get(Uri.parse('$baseUrl/api/workers'));
+    return _decodeListOrThrow(res);
+  }
+
+  static Future<Map<String, dynamic>> markAttendance(List<int> photoBytes, String mimeType) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/api/mark-attendance'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'imageBase64': base64Encode(photoBytes),
+        'mimeType': mimeType,
+      }),
+    );
+    return _decodeOrThrow(res);
+  }
+
   static Future<Map<String, dynamic>> query(String question) async {
     final res = await http.post(
       Uri.parse('$baseUrl/api/query'),

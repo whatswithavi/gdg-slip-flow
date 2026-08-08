@@ -10,6 +10,7 @@ import 'screens/upload_screen.dart';
 import 'screens/approval_screen.dart';
 import 'screens/query_screen.dart';
 import 'screens/insights_screen.dart';
+import 'screens/face_attendance_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,7 +60,7 @@ class _HomeShellState extends State<HomeShell> {
   List<Map<String, dynamic>>? _registerTypes;
   String? _loadError;
 
-  static const _tabOrder = ['upload', 'approve', 'query', 'insights'];
+  static const _tabOrder = ['upload', 'approve', 'faces', 'query', 'insights'];
 
   @override
   void initState() {
@@ -95,6 +96,7 @@ class _HomeShellState extends State<HomeShell> {
                   children: [
                     UploadScreen(registerTypes: _registerTypes!),
                     ApprovalScreen(registerTypes: _registerTypes!),
+                    const FaceAttendanceScreen(),
                     const QueryScreen(),
                     const InsightsScreen(),
                   ],
