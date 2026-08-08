@@ -6,6 +6,8 @@ import 'theme/app_text_styles.dart';
 import 'widgets/app_header.dart';
 import 'widgets/nav_tab_bar.dart';
 import 'widgets/brutalist_card.dart';
+import 'screens/upload_screen.dart';
+import 'screens/approval_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,6 +55,8 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   String _activeTab = 'upload';
 
+  static const _tabOrder = ['upload', 'approve', 'query'];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -61,7 +65,14 @@ class _HomeShellState extends State<HomeShell> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: _PlaceholderBody(tabId: _activeTab),
+          child: IndexedStack(
+            index: _tabOrder.indexOf(_activeTab),
+            children: const [
+              UploadScreen(),
+              ApprovalScreen(),
+              _PlaceholderBody(tabId: 'query'),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: NavTabBar(
