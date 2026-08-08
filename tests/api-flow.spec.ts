@@ -47,13 +47,24 @@ test("extract -> approve -> query works end-to-end against the real backend", as
   const pending = await pendingRes.json();
   expect(pending.find((r: { id: string }) => r.id === extracted.id)).toBeUndefined();
 
+  // Asks about this specific record by id rather than "how many units of
+  // steel rods total" — this test suite has run against the same real
+  // Firestore project many times over this build, so multiple similar
+  // intake records have accumulated (documented above: no delete endpoint,
+  // manual cleanup happens before the final demo, not after every run).
+  // An aggregate-quantity question correctly sums ALL matching approved
+  // records, which grows over time — asserting a fixed total would make
+  // this test flaky by construction, not because of a real regression (this
+  // happened once already: 11 accumulated entries summed to 2,750, not the
+  // 250 from just this run). Citation + a non-aggregated fact (supplier
+  // name) are what's actually worth asserting here.
   const queryRes = await request.post(`${API_BASE}/api/query`, {
-    data: { question: "How many units of steel rods did we receive, and from which supplier?" },
+    data: { question: `Which supplier is on the intake record with id ${extracted.id}?` },
   });
   expect(queryRes.ok(), await queryRes.text()).toBeTruthy();
   const answer = await queryRes.json();
 
-  expect(answer.answer.toLowerCase()).toContain("250");
+  expect(answer.answer.toLowerCase()).toContain("abc metals");
   expect(answer.citedRecordIds).toContain(extracted.id);
 });
 
