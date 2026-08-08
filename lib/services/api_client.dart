@@ -12,55 +12,58 @@ class ApiClient {
     defaultValue: 'http://localhost:3000',
   );
 
-  static Future<Map<String, dynamic>> extractSlip(List<int> imageBytes, String mimeType) async {
+  static Future<List<Map<String, dynamic>>> fetchRegisterTypes() async {
+    final res = await http.get(Uri.parse('$baseUrl/api/register-types'));
+    return _decodeListOrThrow(res);
+  }
+
+  static Future<Map<String, dynamic>> extractRecord(List<int> imageBytes, String mimeType, String registerType) async {
     final res = await http.post(
-      Uri.parse('$baseUrl/api/extract-slip'),
+      Uri.parse('$baseUrl/api/extract-record'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'imageBase64': base64Encode(imageBytes), 'mimeType': mimeType}),
+      body: jsonEncode({
+        'imageBase64': base64Encode(imageBytes),
+        'mimeType': mimeType,
+        'registerType': registerType,
+      }),
     );
     return _decodeOrThrow(res);
   }
 
-  static Future<List<Map<String, dynamic>>> fetchPendingSlips() async {
-    final res = await http.get(Uri.parse('$baseUrl/api/pending-slips'));
-    final decoded = _decodeListOrThrow(res);
-    return decoded;
-  }
-
-  static Future<List<Map<String, dynamic>>> fetchApprovedSlips() async {
-    final res = await http.get(Uri.parse('$baseUrl/api/slips'));
+  static Future<List<Map<String, dynamic>>> fetchPendingRecords({String? registerType}) async {
+    final uri = Uri.parse('$baseUrl/api/pending-records').replace(
+      queryParameters: registerType != null ? {'registerType': registerType} : null,
+    );
+    final res = await http.get(uri);
     return _decodeListOrThrow(res);
   }
 
-  static Future<Map<String, dynamic>> approveSlip(
-    String id, {
-    String? item,
-    num? quantity,
-    String? unit,
-    String? date,
-    String? supplier,
-  }) async {
+  static Future<List<Map<String, dynamic>>> fetchRecords({String? registerType}) async {
+    final uri = Uri.parse('$baseUrl/api/records').replace(
+      queryParameters: registerType != null ? {'registerType': registerType} : null,
+    );
+    final res = await http.get(uri);
+    return _decodeListOrThrow(res);
+  }
+
+  static Future<Map<String, dynamic>> approveRecord(String id, {Map<String, dynamic>? fields}) async {
     final payload = <String, dynamic>{'id': id};
-    if (item != null) payload['item'] = item;
-    if (quantity != null) payload['quantity'] = quantity;
-    if (unit != null) payload['unit'] = unit;
-    if (date != null) payload['date'] = date;
-    if (supplier != null) payload['supplier'] = supplier;
+    if (fields != null) payload['fields'] = fields;
 
     final res = await http.post(
-      Uri.parse('$baseUrl/api/approve-slip'),
+      Uri.parse('$baseUrl/api/approve-record'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(payload),
     );
     return _decodeOrThrow(res);
   }
 
-  static Future<void> rejectSlip(String id, {String? reason}) async {
+  static Future<void> rejectRecord(String id, {String? reason}) async {
     final payload = <String, dynamic>{'id': id};
     if (reason != null) payload['reason'] = reason;
 
     final res = await http.post(
-      Uri.parse('$baseUrl/api/reject-slip'),
+      Uri.parse('$baseUrl/api/reject-record'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(payload),
     );

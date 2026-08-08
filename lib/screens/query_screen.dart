@@ -18,7 +18,7 @@ class _QueryScreenState extends State<QueryScreen> {
   final _questionController = TextEditingController();
   bool _loading = false;
   String? _answer;
-  List<String> _citedSlipIds = [];
+  List<String> _citedRecordIds = [];
   String? _error;
 
   @override
@@ -35,14 +35,14 @@ class _QueryScreenState extends State<QueryScreen> {
       _loading = true;
       _error = null;
       _answer = null;
-      _citedSlipIds = [];
+      _citedRecordIds = [];
     });
 
     try {
       final res = await ApiClient.query(question);
       setState(() {
         _answer = res['answer'] as String?;
-        _citedSlipIds = (res['citedSlipIds'] as List?)?.cast<String>() ?? [];
+        _citedRecordIds = (res['citedRecordIds'] as List?)?.cast<String>() ?? [];
       });
     } catch (e) {
       setState(() => _error = 'Query failed: $e');
@@ -57,7 +57,7 @@ class _QueryScreenState extends State<QueryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Ask about approved slips', style: AppTextStyles.sans(fontSize: 20, fontWeight: FontWeight.w900, color: context.ink)),
+          Text('Ask about approved records', style: AppTextStyles.sans(fontSize: 20, fontWeight: FontWeight.w900, color: context.ink)),
           const SizedBox(height: 4),
           Text(
             'Answers come only from approved records, with citations — never guessed.',
@@ -90,9 +90,9 @@ class _QueryScreenState extends State<QueryScreen> {
                 children: [
                   Text(_answer!, style: AppTextStyles.sans(fontSize: 15, color: context.ink)),
                   const SizedBox(height: 10),
-                  if (_citedSlipIds.isNotEmpty)
+                  if (_citedRecordIds.isNotEmpty)
                     Text(
-                      'Sources: ${_citedSlipIds.map((id) => id.substring(0, 8)).join(', ')}',
+                      'Sources: ${_citedRecordIds.map((id) => id.substring(0, 8)).join(', ')}',
                       style: AppTextStyles.mono(fontSize: 11, color: context.inkMuted),
                     )
                   else

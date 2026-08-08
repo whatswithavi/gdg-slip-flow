@@ -8,7 +8,9 @@ import '../widgets/brutalist_button.dart';
 import '../widgets/brutalist_text_field.dart';
 
 class ApprovalScreen extends StatefulWidget {
-  const ApprovalScreen({super.key});
+  final List<Map<String, dynamic>> registerTypes;
+
+  const ApprovalScreen({super.key, required this.registerTypes});
 
   @override
   State<ApprovalScreen> createState() => _ApprovalScreenState();
@@ -31,17 +33,21 @@ class _ApprovalScreenState extends State<ApprovalScreen> {
       _error = null;
     });
     try {
-      final slips = await ApiClient.fetchPendingSlips();
-      setState(() => _pending = slips);
+      final records = await ApiClient.fetchPendingRecords();
+      setState(() => _pending = records);
     } catch (e) {
-      setState(() => _error = 'Failed to load pending slips: $e');
+      setState(() => _error = 'Failed to load pending records: $e');
     } finally {
       setState(() => _loading = false);
     }
   }
 
   void _removeFromList(String id) {
-    setState(() => _pending.removeWhere((s) => s['id'] == id));
+    setState(() => _pending.removeWhere((r) => r['id'] == id));
+  }
+
+  Map<String, dynamic>? _configFor(String registerType) {
+    return widget.registerTypes.cast<Map<String, dynamic>?>().firstWhere((t) => t?['id'] == registerType, orElse: () => null);
   }
 
   @override
@@ -56,7 +62,7 @@ class _ApprovalScreenState extends State<ApprovalScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Review pending slips', style: AppTextStyles.sans(fontSize: 20, fontWeight: FontWeight.w900, color: context.ink)),
+                Text('Review pending records', style: AppTextStyles.sans(fontSize: 20, fontWeight: FontWeight.w900, color: context.ink)),
                 IconButton(
                   icon: Icon(Icons.refresh, color: context.ink),
                   onPressed: _loading ? null : _load,
@@ -70,14 +76,15 @@ class _ApprovalScreenState extends State<ApprovalScreen> {
             if (!_loading && _error == null && _pending.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('Nothing pending — upload a slip first.', style: AppTextStyles.sans(fontSize: 14, color: context.inkMuted)),
+                child: Text('Nothing pending — upload a record first.', style: AppTextStyles.sans(fontSize: 14, color: context.inkMuted)),
               ),
-            for (final slip in _pending) ...[
-              _PendingSlipCard(
-                key: ValueKey(slip['id']),
-                slip: slip,
-                onApproved: () => _removeFromList(slip['id'] as String),
-                onRejected: () => _removeFromList(slip['id'] as String),
+            for (final record in _pending) ...[
+              _PendingRecordCard(
+                key: ValueKey(record['id']),
+                record: record,
+                typeConfig: _configFor(record['registerType'] as String? ?? ''),
+                onApproved: () => _removeFromList(record['id'] as String),
+                onRejected: () => _removeFromList(record['id'] as String),
               ),
               const SizedBox(height: 12),
             ],
@@ -88,43 +95,46 @@ class _ApprovalScreenState extends State<ApprovalScreen> {
   }
 }
 
-class _PendingSlipCard extends StatefulWidget {
-  final Map<String, dynamic> slip;
+class _PendingRecordCard extends StatefulWidget {
+  final Map<String, dynamic> record;
+  final Map<String, dynamic>? typeConfig;
   final VoidCallback onApproved;
   final VoidCallback onRejected;
 
-  const _PendingSlipCard({super.key, required this.slip, required this.onApproved, required this.onRejected});
+  const _PendingRecordCard({
+    super.key,
+    required this.record,
+    required this.typeConfig,
+    required this.onApproved,
+    required this.onRejected,
+  });
 
   @override
-  State<_PendingSlipCard> createState() => _PendingSlipCardState();
+  State<_PendingRecordCard> createState() => _PendingRecordCardState();
 }
 
-class _PendingSlipCardState extends State<_PendingSlipCard> {
-  late final TextEditingController _item;
-  late final TextEditingController _quantity;
-  late final TextEditingController _unit;
-  late final TextEditingController _date;
-  late final TextEditingController _supplier;
+class _PendingRecordCardState extends State<_PendingRecordCard> {
+  final Map<String, TextEditingController> _controllers = {};
   bool _busy = false;
   String? _error;
+
+  List<Map<String, dynamic>> get _fieldDefs => (widget.typeConfig?['fields'] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
   @override
   void initState() {
     super.initState();
-    _item = TextEditingController(text: widget.slip['item']?.toString() ?? '');
-    _quantity = TextEditingController(text: widget.slip['quantity']?.toString() ?? '');
-    _unit = TextEditingController(text: widget.slip['unit']?.toString() ?? '');
-    _date = TextEditingController(text: widget.slip['date']?.toString() ?? '');
-    _supplier = TextEditingController(text: widget.slip['supplier']?.toString() ?? '');
+    final fields = widget.record['fields'] as Map? ?? {};
+    for (final def in _fieldDefs) {
+      final key = def['key'] as String;
+      _controllers[key] = TextEditingController(text: fields[key]?.toString() ?? '');
+    }
   }
 
   @override
   void dispose() {
-    _item.dispose();
-    _quantity.dispose();
-    _unit.dispose();
-    _date.dispose();
-    _supplier.dispose();
+    for (final c in _controllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -134,14 +144,13 @@ class _PendingSlipCardState extends State<_PendingSlipCard> {
       _error = null;
     });
     try {
-      await ApiClient.approveSlip(
-        widget.slip['id'] as String,
-        item: _item.text,
-        quantity: num.tryParse(_quantity.text),
-        unit: _unit.text,
-        date: _date.text,
-        supplier: _supplier.text,
-      );
+      final fields = <String, dynamic>{};
+      for (final def in _fieldDefs) {
+        final key = def['key'] as String;
+        final text = _controllers[key]?.text ?? '';
+        fields[key] = def['type'] == 'number' ? num.tryParse(text) : text;
+      }
+      await ApiClient.approveRecord(widget.record['id'] as String, fields: fields);
       widget.onApproved();
     } catch (e) {
       setState(() => _error = 'Approve failed: $e');
@@ -156,7 +165,7 @@ class _PendingSlipCardState extends State<_PendingSlipCard> {
       _error = null;
     });
     try {
-      await ApiClient.rejectSlip(widget.slip['id'] as String);
+      await ApiClient.rejectRecord(widget.record['id'] as String);
       widget.onRejected();
     } catch (e) {
       setState(() => _error = 'Reject failed: $e');
@@ -167,9 +176,10 @@ class _PendingSlipCardState extends State<_PendingSlipCard> {
 
   @override
   Widget build(BuildContext context) {
-    final confidence = (widget.slip['confidence'] as num?)?.toDouble() ?? 0;
-    final imageUrl = widget.slip['imageUrl'] as String?;
-    final notes = widget.slip['notes'] as String?;
+    final confidence = (widget.record['confidence'] as num?)?.toDouble() ?? 0;
+    final imageUrl = widget.record['imageUrl'] as String?;
+    final notes = widget.record['notes'] as String?;
+    final typeLabel = widget.typeConfig?['label'] as String? ?? widget.record['registerType'] as String? ?? 'Record';
 
     return BrutalistCard(
       backgroundColor: context.cardBg,
@@ -194,6 +204,7 @@ class _PendingSlipCardState extends State<_PendingSlipCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(typeLabel, style: AppTextStyles.sans(fontSize: 13, fontWeight: FontWeight.w900, color: context.ink)),
                     Text(
                       'Confidence: ${(confidence * 100).toStringAsFixed(0)}%',
                       style: AppTextStyles.sans(
@@ -210,24 +221,18 @@ class _PendingSlipCardState extends State<_PendingSlipCard> {
             ],
           ),
           const SizedBox(height: 12),
-          BrutalistTextField(label: 'Item', controller: _item),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(child: BrutalistTextField(label: 'Quantity', controller: _quantity, keyboardType: TextInputType.number)),
-              const SizedBox(width: 10),
-              Expanded(child: BrutalistTextField(label: 'Unit', controller: _unit)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          BrutalistTextField(label: 'Date', controller: _date),
-          const SizedBox(height: 10),
-          BrutalistTextField(label: 'Supplier', controller: _supplier),
-          if (_error != null) ...[
-            const SizedBox(height: 8),
-            Text(_error!, style: AppTextStyles.sans(fontSize: 12, color: Colors.red)),
+          for (final def in _fieldDefs) ...[
+            BrutalistTextField(
+              label: def['label'] as String,
+              controller: _controllers[def['key']]!,
+              keyboardType: def['type'] == 'number' ? TextInputType.number : TextInputType.text,
+            ),
+            const SizedBox(height: 10),
           ],
-          const SizedBox(height: 12),
+          if (_error != null) ...[
+            Text(_error!, style: AppTextStyles.sans(fontSize: 12, color: Colors.red)),
+            const SizedBox(height: 8),
+          ],
           Row(
             children: [
               Expanded(

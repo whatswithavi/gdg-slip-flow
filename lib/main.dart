@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'services/api_client.dart';
 import 'theme/app_theme_controller.dart';
+import 'theme/app_text_styles.dart';
 import 'widgets/app_header.dart';
 import 'widgets/nav_tab_bar.dart';
 import 'screens/upload_screen.dart';
@@ -53,8 +55,25 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   String _activeTab = 'upload';
+  List<Map<String, dynamic>>? _registerTypes;
+  String? _loadError;
 
   static const _tabOrder = ['upload', 'approve', 'query'];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRegisterTypes();
+  }
+
+  Future<void> _loadRegisterTypes() async {
+    try {
+      final types = await ApiClient.fetchRegisterTypes();
+      setState(() => _registerTypes = types);
+    } catch (e) {
+      setState(() => _loadError = 'Could not reach the backend: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,14 +83,20 @@ class _HomeShellState extends State<HomeShell> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: IndexedStack(
-            index: _tabOrder.indexOf(_activeTab),
-            children: const [
-              UploadScreen(),
-              ApprovalScreen(),
-              QueryScreen(),
-            ],
-          ),
+          child: _registerTypes == null
+              ? Center(
+                  child: _loadError != null
+                      ? Text(_loadError!, style: AppTextStyles.sans(fontSize: 13, color: Colors.red), textAlign: TextAlign.center)
+                      : const CircularProgressIndicator(),
+                )
+              : IndexedStack(
+                  index: _tabOrder.indexOf(_activeTab),
+                  children: [
+                    UploadScreen(registerTypes: _registerTypes!),
+                    ApprovalScreen(registerTypes: _registerTypes!),
+                    const QueryScreen(),
+                  ],
+                ),
         ),
       ),
       bottomNavigationBar: NavTabBar(
