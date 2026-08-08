@@ -43,3 +43,15 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Node backend
+server/node_modules/
+server/dist/
+server/.env
+*.log
+test-results/
+playwright-report/
+
+# Firebase service account (server-side credential, never commit)
+server/firebase-service-account.json
+
