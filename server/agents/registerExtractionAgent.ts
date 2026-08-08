@@ -4,8 +4,9 @@
  * Orchestrates a paper-register-upload request end-to-end, for any
  * configured register type (see registerTypes.ts): takes a document image
  * and a registerType id, invokes the extract_register_data skill to build
- * the type-specific prompt, calls Gemini's multimodal endpoint (image in,
- * structured JSON out — one call, no separate OCR step), uploads the image
+ * the type-specific prompt, calls the LLM's multimodal endpoint (image in,
+ * structured JSON out — one call, no separate OCR step; see ../llm.ts for
+ * the Gemini-first-then-Groq-fallback provider logic), uploads the image
  * to Storage, writes the result to records_pending, and logs the extraction
  * attempt to audit_log. Never writes to the approved `records` collection —
  * only a human approval action (see routes/records.ts) does that.
@@ -16,11 +17,9 @@
 
 import { randomUUID } from "crypto";
 import { db, bucket } from "../firebase";
+import { callLLMVision, LLMError } from "../llm";
 import { getRegisterType, DEFAULT_COMPANY_ID } from "../registerTypes";
 import { buildExtractionPrompt, parseExtractionResponse, RegisterExtractionResult } from "../skills/extract_register_data";
-
-const GEMINI_MODEL = "gemini-flash-latest";
-const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 export class RegisterExtractionAgentError extends Error {}
 
@@ -33,44 +32,15 @@ export interface RegisterRecord extends RegisterExtractionResult {
   createdAt: number;
 }
 
-async function callGeminiVision(
-  imageBase64: string,
-  mimeType: string,
-  registerTypeId: string
-): Promise<RegisterExtractionResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new RegisterExtractionAgentError("GEMINI_API_KEY is not set");
-  }
-
+async function extractWithLLM(imageBase64: string, mimeType: string, registerTypeId: string): Promise<RegisterExtractionResult> {
   const config = getRegisterType(registerTypeId);
 
-  const res = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            { text: buildExtractionPrompt(config) },
-            { inlineData: { mimeType, data: imageBase64 } },
-          ],
-        },
-      ],
-      generationConfig: { temperature: 0.1 },
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new RegisterExtractionAgentError(`LLM request failed (${res.status}): ${body}`);
-  }
-
-  const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-  if (!text) {
-    throw new RegisterExtractionAgentError("LLM returned no content");
+  let text: string;
+  try {
+    text = await callLLMVision(buildExtractionPrompt(config), imageBase64, mimeType);
+  } catch (err) {
+    if (err instanceof LLMError) throw new RegisterExtractionAgentError(err.message);
+    throw err;
   }
 
   try {
@@ -124,7 +94,7 @@ export async function runRegisterExtraction(
   getRegisterType(registerTypeId);
 
   const id = randomUUID();
-  const extraction = await callGeminiVision(imageBase64, mimeType, registerTypeId);
+  const extraction = await extractWithLLM(imageBase64, mimeType, registerTypeId);
   const imageUrl = await uploadRegisterImage(id, imageBase64, mimeType);
 
   const record: RegisterRecord = {

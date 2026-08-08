@@ -1,5 +1,9 @@
 # Custom Agents & Skills
 
+## Shared: LLM provider abstraction (`server/llm.ts`)
+
+All three agents below call `callLLMText`/`callLLMVision` rather than hitting an LLM API directly. Both try Gemini first (the primary, proven provider) and fall back to Groq (`qwen/qwen3.6-27b` for vision, `openai/gpt-oss-20b` for text) **specifically on a 429 quota error** — a malformed request or bad prompt still fails loudly rather than silently retrying against a different provider and masking the bug. This removed duplicated fetch boilerplate that used to live separately in each agent, and implements the multi-provider resilience the hackathon brief itself recommends. Verified for real: Gemini's free-tier quota was genuinely exhausted during development, so every agent below has been live-tested running entirely on the Groq fallback path, not just the primary one.
+
 ## Agent 1: `RegisterExtractionAgent`
 
 **File**: [`server/agents/registerExtractionAgent.ts`](server/agents/registerExtractionAgent.ts)
