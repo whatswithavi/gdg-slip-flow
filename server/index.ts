@@ -1,12 +1,15 @@
 import dotenv from "dotenv";
 import express from "express";
+import cors from "cors";
 import { extractSlipRouter } from "./routes/extractSlip";
+import { slipsRouter } from "./routes/slips";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
+app.use(cors());
 app.use(express.json({ limit: "15mb" }));
 
 app.get("/api/health", (_req, res) => {
@@ -14,6 +17,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use(extractSlipRouter);
+app.use(slipsRouter);
 
 if (require.main === module) {
   app.listen(PORT, () => {
