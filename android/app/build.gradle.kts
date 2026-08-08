@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.aavii.gdg_slip_flow"
+    namespace = "com.aavii.gdg"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -15,8 +15,10 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.aavii.gdg_slip_flow"
+        // Matches the Android app already registered in the gdgdeployordie
+        // Firebase project — must stay in sync with google-services.json's
+        // package_name.
+        applicationId = "com.aavii.gdg"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

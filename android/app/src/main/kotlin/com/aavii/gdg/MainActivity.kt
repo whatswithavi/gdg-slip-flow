@@ -1,4 +1,4 @@
-package com.aavii.gdg_slip_flow
+package com.aavii.gdg
 
 import io.flutter.embedding.android.FlutterActivity
 

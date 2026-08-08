@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "398185915394",
+    "project_id": "gdgdeployordie",
+    "storage_bucket": "gdgdeployordie.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:398185915394:android:2dc8a74dc01cd7474eb31b",
+        "android_client_info": {
+          "package_name": "com.aavii.gdg"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "398185915394-d38o7htc87msj85gupcab5voocvfg3tq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0OT69lRslvr_R-_eKYWussxeczGwQ-e4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "398185915394-d38o7htc87msj85gupcab5voocvfg3tq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'theme/app_theme_controller.dart';
 import 'theme/app_text_styles.dart';
 import 'widgets/app_header.dart';
 import 'widgets/nav_tab_bar.dart';
 import 'widgets/brutalist_card.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const SlipFlowApp());
 }
 
